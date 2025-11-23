@@ -18,12 +18,15 @@ export default function ExpenseScreen() {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
+  const [filter, setFilter] = useState('All');
+  const [filteredExpenses, setFilteredExpenses] = useState([]);
 
   const loadExpenses = async () => {
     const rows = await db.getAllAsync(
       'SELECT * FROM expenses ORDER BY id DESC;'
     );
     setExpenses(rows);
+    applyFilter(rows, filter);
   };
   const addExpense = async () => {
     const amountNumber = parseFloat(amount);
@@ -41,9 +44,20 @@ export default function ExpenseScreen() {
       return;
     }
 
+    const newDate = new Date().toISOString().split('T')[0];
+    const applyFilter= (allExpenses, currentFilter) => {
+      if (currentFilter === 'All') {
+        setFilteredExpenses(allExpenses);
+      } else {
+        const filtered = allExpenses.filter(
+          (expense) => expense.category === currentFilter
+        );
+        setFilteredExpenses(filtered);
+      }
+    };
     await db.runAsync(
-      'INSERT INTO expenses (amount, category, note) VALUES (?, ?, ?);',
-      [amountNumber, trimmedCategory, trimmedNote || null]
+      'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?);',
+      [amountNumber, trimmedCategory, trimmedNote || null, newDate]
     );
 
     setAmount('');
@@ -81,8 +95,8 @@ export default function ExpenseScreen() {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           amount REAL NOT NULL,
           category TEXT NOT NULL,
-          note TEXT
-        );
+          note TEXT,
+          date TEXT NOT NULL
       `);
 
       await loadExpenses();
@@ -120,6 +134,26 @@ export default function ExpenseScreen() {
         />
         <Button title="Add Expense" onPress={addExpense} />
       </View>
+<View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 12 }}>
+  {['All', 'Week', 'Month'].map(option => (
+    <TouchableOpacity
+      key={option}
+      onPress={() => {
+        setFilter(option);
+        applyFilter(expenses, option);
+      }}
+      style={{
+        padding: 8,
+        borderRadius: 6,
+        backgroundColor: filter === option ? '#fbbf24' : '#1f2937',
+      }}
+    >
+      <Text style={{ color: filter === option ? '#111827' : '#fff', fontWeight: '600' }}>
+        {option === 'Week' ? 'This Week' : option === 'Month' ? 'This Month' : 'All'}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</View>
 
       <FlatList
         data={expenses}
