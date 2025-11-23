@@ -43,7 +43,7 @@ export default function ExpenseScreen() {
       // Category is required
       return;
     }
-
+    const categoryTotals = computeCategoryTotals(filteredExpenses);
     const newDate = new Date().toISOString().split('T')[0];
     const applyFilter= (allExpenses, currentFilter) => {
       if (currentFilter === 'All') {
@@ -55,6 +55,22 @@ export default function ExpenseScreen() {
         setFilteredExpenses(filtered);
       }
     };
+
+    const computeCategoryTotals = (expensesList) => {
+  const totals = {};
+
+  expensesList.forEach((expense) => {
+    const cat = expense.category || 'Other';
+    if (!totals[cat]) {
+      totals[cat] = 0;
+    }
+    totals[cat] += Number(expense.amount);
+  });
+
+  return totals;
+};
+
+
     await db.runAsync(
       'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?);',
       [amountNumber, trimmedCategory, trimmedNote || null, newDate]
