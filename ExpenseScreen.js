@@ -13,14 +13,14 @@ import { useSQLiteContext } from 'expo-sqlite';
 
 export default function ExpenseScreen() {
   const db = useSQLiteContext();
-
   const [expenses, setExpenses] = useState([]);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
   const [filter, setFilter] = useState('All');
   const [filteredExpenses, setFilteredExpenses] = useState([]);
-
+  const [editingExpense, setEditingExpense] = useState(null);
+}
   const loadExpenses = async () => {
     const rows = await db.getAllAsync(
       'SELECT * FROM expenses ORDER BY id DESC;'
@@ -30,7 +30,8 @@ export default function ExpenseScreen() {
   };
   const addExpense = async () => {
     const amountNumber = parseFloat(amount);
-
+    const saveExpense = async () => {
+      const amountNumber = parseFloat(amount);
     if (isNaN(amountNumber) || amountNumber <= 0) {
       // Basic validation: ignore invalid or non-positive amounts
       return;
@@ -42,9 +43,9 @@ export default function ExpenseScreen() {
     if (!trimmedCategory) {
       // Category is required
       return;
+       const newDate = new Date().toISOString().split('T')[0];
     }
     const categoryTotals = computeCategoryTotals(filteredExpenses);
-    const newDate = new Date().toISOString().split('T')[0];
     const applyFilter= (allExpenses, currentFilter) => {
       if (currentFilter === 'All') {
         setFilteredExpenses(allExpenses);
@@ -90,19 +91,21 @@ export default function ExpenseScreen() {
   };
 
 
-  const renderExpense = ({ item }) => (
+ const renderExpense = ({ item }) => (
+  <TouchableOpacity onPress={() => setEditingExpense(item)}>
     <View style={styles.expenseRow}>
       <View style={{ flex: 1 }}>
         <Text style={styles.expenseAmount}>${Number(item.amount).toFixed(2)}</Text>
         <Text style={styles.expenseCategory}>{item.category}</Text>
         {item.note ? <Text style={styles.expenseNote}>{item.note}</Text> : null}
       </View>
-
       <TouchableOpacity onPress={() => deleteExpense(item.id)}>
         <Text style={styles.delete}>✕</Text>
       </TouchableOpacity>
     </View>
-  );
+  </TouchableOpacity>
+);
+
 
   useEffect(() => {
     async function setup() {
@@ -170,6 +173,11 @@ export default function ExpenseScreen() {
     </TouchableOpacity>
   ))}
 </View>
+<Button
+  title={editingExpense ? "Save Changes" : "Add Expense"}
+  onPress={saveExpense}
+/>
+
 
       <FlatList
         data={expenses}
